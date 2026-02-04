@@ -1,0 +1,1896 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arknighgts endfild pazzle solver</title>
+  <style>
+    :root{
+      --bg:#100000;
+      --panel:#120000;
+      --panel2:#0e0000;
+      --text:#FFAA00;
+      --muted:#FF7700;
+      --line:#311700;
+      --accent:#FFAA00;
+      --danger:#FFAA00;
+      --cell:40px;
+      --gap:6px;
+      --r:14px;
+      --mono: "Lucida Console", Monaco, ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: var(--mono);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: var(--bg);
+      color:var(--text);
+      font-family:var(--mono);
+    }
+    header{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,170,0,0.18);
+      background: linear-gradient(180deg, rgba(255,170,0,0.10), transparent 55%);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    header .title{font-weight:700; font-size:14px}
+    header .help{color:var(--muted); font-size:12px; line-height:1.35; max-width: 1100px}
+    .wrap{
+      padding:14px 16px 18px;
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:14px;
+    }
+    @media (max-width: 1100px){
+      .wrap{grid-template-columns:1fr}
+    }
+    .card{
+      background: rgba(255,170,0,0.04);
+      border:1px solid rgba(255,170,0,0.18);
+      border-radius: var(--r);
+      overflow:hidden;
+    }
+    .bar{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,170,0,0.18);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      background: rgba(0,0,0,0.22);
+    }
+    .bar .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+    .bar .h{font-weight:700; font-size:13px}
+    .content{padding:12px}
+    button{
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,170,0,0.24);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    button:hover{border-color: rgba(255,255,255,0.22)}
+    button.primary{border-color: rgba(255,170,0,0.45); background: rgba(255,170,0,0.14)}
+    button.danger{border-color: rgba(255,170,0,0.45); background: rgba(255,170,0,0.14)}
+    button:disabled{opacity:.45; cursor:not-allowed}
+    input[type="number"], input[type="text"], textarea{
+      background: rgba(0,0,0,0.25);
+      border:1px solid rgba(255,170,0,0.24);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius: 12px;
+      font-size:12px;
+      outline:none;
+    }
+    input[type="number"]{width:86px}
+    textarea{
+      width:100%;
+      min-height:120px;
+      font-family: var(--mono);
+      resize: vertical;
+      line-height:1.35;
+    }
+    label{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px}
+    .boardScroll{
+      overflow:auto;
+      max-width:100%;
+      max-height:70vh;
+      padding:2px;
+      border:1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.10);
+    }
+
+    .boardWrap{
+      display:grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto 1fr;
+      gap: var(--gap);
+      align-items:start;
+    }
+    .corner{
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.25);
+      border:1px solid rgba(255,170,0,0.18);
+    }
+    .topCounts{
+      display:grid;
+      gap: var(--gap);
+    }
+    .leftCounts{
+      display:grid;
+      gap: var(--gap);
+    }
+    .countInput{
+  width: var(--cell);
+  height: var(--cell);
+  text-align:center;
+  padding:0;
+  border-radius: 12px;
+  font-weight:700;
+  background: rgba(0,0,0,0.25);
+  border:1px solid rgba(255,170,0,0.24);
+  color:var(--text);
+  outline:none;
+}
+.countInput::placeholder{ color: rgba(255,170,0,0.40); }
+
+.paletteRow{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.palBtn{
+  width:18px;
+  height:18px;
+  min-width:18px;
+  min-height:18px;
+  padding:0;
+  border-radius:6px;
+  border:1px solid rgba(255,170,0,0.30);
+  background: rgba(255,255,255,0.06);
+  cursor:pointer;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.45) inset;
+}
+.palBtn:hover{ border-color: rgba(255,170,0,0.55); }
+.palBtn.sel{
+  border-color: rgba(255,170,0,0.85);
+  box-shadow: 0 0 0 2px rgba(255,170,0,0.45), 0 0 0 1px rgba(0,0,0,0.55) inset;
+}
+
+    #grid{
+      display:grid;
+      gap: var(--gap);
+      user-select:none;
+    }
+    .cell{
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 12px;
+      border:1px solid rgba(255,170,0,0.24);
+      background: rgba(0,0,0,0.28);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .cell:hover{border-color: rgba(255,255,255,0.24)}
+    .cell.hole{
+      background: repeating-linear-gradient(45deg, rgba(255,255,255,0.08), rgba(255,255,255,0.08) 6px, rgba(0,0,0,0.18) 6px, rgba(0,0,0,0.18) 12px);
+    }
+    .cell.fixed{
+      background: rgba(255,170,0,0.16);
+      border-color: rgba(255,170,0,0.30);
+    }
+    .badge{
+      font-size: 10px;
+      font-weight: 800;
+      padding:2px 6px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.45);
+      border:1px solid rgba(255,170,0,0.28);
+    }
+    .legend{display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
+    .dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px; vertical-align:middle}
+    .dot.empty{background: rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.22)}
+    .dot.hole{background: rgba(255,255,255,0.10); border:1px dashed rgba(255,255,255,0.35)}
+    .dot.fixed{background: rgba(255,170,0,0.25); border:1px solid rgba(255,170,0,0.45)}
+    .dot.sol{background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18)}
+
+    .piecesList{display:grid; gap:10px}
+    .pieceCard{
+      border:1px solid rgba(255,170,0,0.22);
+      border-radius: 12px;
+      padding:10px;
+      background: rgba(0,0,0,0.16);
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:start;
+      cursor:pointer;
+    }
+    .pieceCard.selected{border-color: rgba(255,170,0,0.45); box-shadow: 0 0 0 3px rgba(255,170,0,0.10) inset}
+    .pieceMeta{display:grid; gap:6px}
+    .pieceMeta .nameRow{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .pieceMeta input[type="text"]{width: 220px; max-width: 100%;}
+    .miniGrid{
+      display:grid;
+      grid-template-columns: repeat(5, 14px);
+      grid-auto-rows: 14px;
+      gap: 4px;
+      padding:8px;
+      border-radius: 12px;
+      border:1px solid rgba(255,170,0,0.22);
+      background: rgba(0,0,0,0.22);
+      justify-self:end;
+    }
+    .miniCell{
+      width:14px; height:14px;
+      border-radius:4px;
+      border:1px solid rgba(255,170,0,0.22);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+    }
+    .miniCell.on{background: rgba(255,170,0,0.18); border-color: rgba(255,170,0,0.35)}
+    .miniActions{display:flex; gap:8px; flex-wrap:wrap}
+    .small{font-size:12px; color:var(--muted); line-height:1.35}
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 820px){ .grid2{grid-template-columns:1fr} }
+
+    .status{
+      white-space:pre-wrap;
+      font-family: var(--mono);
+      font-size:12px;
+      line-height:1.35;
+      padding:10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,170,0,0.22);
+      background: rgba(0,0,0,0.22);
+    }
+    .status.error{
+      border-color: rgba(255,170,0,0.35);
+      background: rgba(255,170,0,0.10);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,170,0,0.22);
+      background: rgba(0,0,0,0.16);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill input{accent-color: var(--accent)}
+    .errBox{
+      margin-top:10px;
+      padding:10px;
+      border-radius:12px;
+      border:1px solid rgba(255,170,0,0.35);
+      background: rgba(255,170,0,0.10);
+      font-family: var(--mono);
+      font-size:12px;
+      display:none;
+      white-space:pre-wrap;
+    }
+    .sep{height:10px}
+  
+
+    /* stronger input styling to avoid white defaults */
+    input, button, select, textarea{font-family:var(--mono);}
+    input, textarea, select{
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      border:1px solid rgba(255,170,0,0.24);
+      outline:none;
+      border-radius: 12px;
+      padding:6px 8px;
+      appearance:none;
+      -webkit-appearance:none;
+      color-scheme: dark;
+    }
+    input::placeholder, textarea::placeholder{color: rgba(255,170,0,0.55);}
+    /* counts (total mode) */
+    .countInput{
+      width: var(--cell);
+      height: var(--cell);
+      text-align:center;
+      padding:0;
+      border-radius: 12px;
+      font-weight:700;
+    }
+    /* counts (color mode) */
+    .topColStack{display:flex; flex-direction:column; gap:6px; align-items:center; padding:4px 0;}
+    .leftRowStack{display:flex; flex-direction:row; gap:8px; align-items:center; height:var(--cell);}
+    .countRow{display:flex; align-items:center; gap:6px;}
+    .countInputMini{
+      width: 30px;
+      height: 24px;
+      padding:0;
+      text-align:center;
+      border-radius: 10px;
+      font-weight:700;
+    }
+    .swatch{
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      border:1px solid rgba(255,170,0,0.30);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset;
+      flex: 0 0 auto;
+    }
+</style>
+</head>
+
+<body>
+<header>
+  <div class="title">arknighgts endfild pazzle solver</div>
+</header>
+
+<div class="wrap">
+  <section class="card">
+    <div class="bar">
+      <div class="h">Поле</div>
+      <div class="row">
+        <label>Строки <input id="rows" type="number" min="1" max="60" value="5"></label>
+        <label>Колонки <input id="cols" type="number" min="1" max="60" value="5"></label>
+<button id="apply">Применить размер</button>
+        <button id="rerender">Перерисовать</button>
+        <button id="clearSol">Очистить решение</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="boardScroll"><div class="boardWrap">
+        <div class="corner"></div>
+        <div id="topCounts" class="topCounts"></div>
+        <div id="leftCounts" class="leftCounts"></div>
+        <div id="grid"></div>
+      </div></div>
+      <div class="sep"></div>
+      <div class="legend">
+        <span><span class="dot empty"></span>пусто</span>
+        <span><span class="dot hole"></span>запрет</span>
+        <span><span class="dot fixed"></span>фиксированный блок</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <div class="h">Фигуры</div>
+      <div class="row">
+        <button class="primary" id="solve">Решить</button>
+        <button id="diagnose">Проверить ввод</button>
+        <button class="danger" id="resetAll">Сбросить всё</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="grid2">
+        <div>
+          <div class="bar" style="border:none; padding:0 0 10px 0; background:none">
+            <div class="h" style="font-size:12px">Фигуры</div>
+            <div class="row">
+              <button id="addPiece">+ Фигура</button>
+              <button id="delPiece" class="danger">Удалить</button>
+              <button id="normPiece">Нормализовать</button>
+            </div>
+          </div>
+
+          <div class="row" style="gap:10px; padding:0 0 10px 0;">
+            <span class="pill"><input id="allowUnused" type="checkbox"> Не все</span>
+            <span class="pill">Лимит <input id="nodeLimit" type="number" min="1000" max="5000000" value="500000" style="width:110px"></span>
+          </div>
+
+          <div id="pieces" class="piecesList"></div>
+        </div>
+
+        <div>
+          <div class="h" style="font-size:12px; margin-bottom:8px">Статус</div>
+          <div id="status" class="status">Готово.</div>
+          <div id="errBox" class="errBox" style="display:none"></div>
+
+          <div class="sep"></div>
+          <div class="h" style="font-size:12px; margin-bottom:8px">Импорт/Экспорт</div>
+          <textarea id="json" spellcheck="false"></textarea>
+          <div class="row" style="justify-content:flex-end; margin-top:8px">
+            <button id="export">Экспорт</button>
+            <button id="import">Импорт</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+
+(() => {
+  const el = (id) => document.getElementById(id);
+
+  const DEFAULT_PALETTE = [
+    "#FFB000","#3FA9F5","#7ED957","#FF5DA2","#8B5CF6",
+    "#22C55E","#06B6D4","#F97316","#EAB308","#EF4444"
+  ];
+
+  const state = {
+    rows: 5,
+    cols: 5,
+    cellTypes: new Uint8Array(25),    // 0 empty, 1 blocked, 2 fixed
+    fixedColors: Array(25).fill(""),  // hex or ""
+    rowTargets: Array(5).fill(""),    // total mode
+    colTargets: Array(5).fill(""),
+    rowColorTargets: Array.from({length:5}, ()=> ({})), // color mode
+    colColorTargets: Array.from({length:5}, ()=> ({})),
+    pieces: [], // {name, grid5: Uint8Array(25), color: string}
+    selectedPiece: -1,
+    solution: null, // {cellToPiece: Int32Array}
+    lastStats: null,
+    activeColors: [],
+  };
+
+  function clampInt(v, lo, hi, def){
+    const n = parseInt(v, 10);
+    if (!Number.isFinite(n)) return def;
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  function hexToRgb(hex){
+    if (!hex) return null;
+    const h = String(hex).trim();
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(h);
+    if (!m) return null;
+    const x = parseInt(m[1], 16);
+    return [(x>>16)&255, (x>>8)&255, x&255];
+  }
+  function colorToRgba(hex, a){
+    const rgb = hexToRgb(hex) || [255,170,0];
+    return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+  }
+
+  function normalizeHex(hex){
+    if (!hex) return "";
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex).trim());
+    return m ? ("#" + m[1].toUpperCase()) : "";
+  }
+
+  function nearestPaletteColor(hex){
+    const rgb = hexToRgb(hex);
+    if (!rgb) return defaultPieceColor(0);
+    let best = defaultPieceColor(0);
+    let bestD = 1e18;
+    for (const p of DEFAULT_PALETTE){
+      const prgb = hexToRgb(p) || [255,170,0];
+      const d = (rgb[0]-prgb[0])*(rgb[0]-prgb[0]) + (rgb[1]-prgb[1])*(rgb[1]-prgb[1]) + (rgb[2]-prgb[2])*(rgb[2]-prgb[2]);
+      if (d < bestD){ bestD = d; best = String(p).toUpperCase(); }
+    }
+    return best;
+  }
+
+  function defaultPieceColor(i){ return String(DEFAULT_PALETTE[i % DEFAULT_PALETTE.length]).toUpperCase(); }
+  function pieceColor(i){
+    const p = state.pieces[i];
+    return (p && p.color) ? normalizeHex(p.color) || defaultPieceColor(i) : defaultPieceColor(i);
+  }
+
+  function getActiveColors(){
+    const s = new Set();
+    for (const p of state.pieces){
+      if (p && p.color) { const h = normalizeHex(p.color); if (h) s.add(h); }
+    }
+    return Array.from(s).slice(0, 10);
+  }
+
+  function syncColorModel(){
+    const colors = getActiveColors();
+    state.activeColors = colors;
+
+    // keep targets sized
+    while (state.rowColorTargets.length < state.rows) state.rowColorTargets.push({});
+    while (state.colColorTargets.length < state.cols) state.colColorTargets.push({});
+
+    // keep only current colors
+    for (let r=0;r<state.rows;r++){
+      const old = state.rowColorTargets[r] || {};
+      const nu = {};
+      for (const c of colors) nu[c] = (old[c] ?? "");
+      state.rowColorTargets[r] = nu;
+    }
+    for (let c=0;c<state.cols;c++){
+      const old = state.colColorTargets[c] || {};
+      const nu = {};
+      for (const col of colors) nu[col] = (old[col] ?? "");
+      state.colColorTargets[c] = nu;
+    }
+
+    // fixed blocks: only allowed when there is at least one active color
+    for (let i=0;i<state.fixedColors.length;i++){
+      if (state.cellTypes[i] !== 2){
+        state.fixedColors[i] = "";
+        continue;
+      }
+      if (!colors.length){
+        state.cellTypes[i] = 0;
+        state.fixedColors[i] = "";
+        continue;
+      }
+      const fc = state.fixedColors[i];
+      if (!fc || !colors.includes(fc)) state.fixedColors[i] = colors[0];
+    }
+
+    renderCounts();
+    renderGrid();
+  }
+
+  function setCellSize(r,c){
+    const size = (r>20 || c>20) ? 24 : (r>12 || c>12) ? 30 : 40;
+    document.documentElement.style.setProperty("--cell", size + "px");
+  }
+
+  // ----- piece helpers -----
+  function pieceToCoords(p){
+    const out = [];
+    const g = p.grid5;
+    for (let r=0;r<5;r++){
+      for (let c=0;c<5;c++){
+        const i = r*5+c;
+        if (g[i]) out.push([r,c]);
+      }
+    }
+    return out;
+  }
+  function bbox(coords){
+    if (!coords.length) return {minR:0,minC:0,maxR:0,maxC:0,h:0,w:0};
+    let minR=1e9,minC=1e9,maxR=-1e9,maxC=-1e9;
+    for (const [r,c] of coords){ if(r<minR)minR=r; if(c<minC)minC=c; if(r>maxR)maxR=r; if(c>maxC)maxC=c; }
+    return {minR,minC,maxR,maxC,h:maxR-minR+1,w:maxC-minC+1};
+  }
+  function normalizeCoords(coords){
+    const bb = bbox(coords);
+    return coords.map(([r,c]) => [r-bb.minR, c-bb.minC]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  }
+  function rot90(coords){
+    // rotate around origin: (r,c)->(c,-r), then normalize
+    const r = coords.map(([x,y]) => [y, -x]);
+    return normalizeCoords(r);
+  }
+  function uniqueRotations(coords){
+    let cur = normalizeCoords(coords);
+    const res = [];
+    const seen = new Set();
+    for (let i=0;i<4;i++){
+      const key = cur.map(([r,c])=>`${r},${c}`).join(";");
+      if (!seen.has(key)){
+        seen.add(key);
+        res.push(cur);
+      }
+      cur = rot90(cur);
+    }
+    return res;
+  }
+  function connectedComponentsCount(coords){
+    if (!coords.length) return 0;
+    const set = new Set(coords.map(([r,c])=>`${r},${c}`));
+    const seen = new Set();
+    let comps = 0;
+    for (const key of set){
+      if (seen.has(key)) continue;
+      comps++;
+      const q = [key];
+      seen.add(key);
+      while (q.length){
+        const k = q.pop();
+        const [r,c] = k.split(",").map(Number);
+        const nb = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+        for (const [rr,cc] of nb){
+          const kk = `${rr},${cc}`;
+          if (set.has(kk) && !seen.has(kk)){
+            seen.add(kk);
+            q.push(kk);
+          }
+        }
+      }
+    }
+    return comps;
+  }
+  function normalizePieceGrid5(p){
+    const coords = pieceToCoords(p);
+    if (!coords.length) return;
+    const bb = bbox(coords);
+    const g = new Uint8Array(25);
+    for (const [r,c] of coords){
+      const rr = r - bb.minR;
+      const cc = c - bb.minC;
+      if (rr>=0 && rr<5 && cc>=0 && cc<5) g[rr*5+cc] = 1;
+    }
+    p.grid5 = g;
+  }
+  function rotatePieceGrid5(p, dir){
+    // dir: -1 left, +1 right
+    const coords = pieceToCoords(p);
+    if (!coords.length) return;
+    let cc = coords.map(([r,c]) => [r,c]);
+    if (dir === 1){
+      // right: (r,c)->(c,4-r)
+      cc = cc.map(([r,c]) => [c, 4-r]);
+    } else {
+      // left: (r,c)->(4-c,r)
+      cc = cc.map(([r,c]) => [4-c, r]);
+    }
+    const g = new Uint8Array(25);
+    for (const [r,c] of cc){
+      if (r>=0 && r<5 && c>=0 && c<5) g[r*5+c] = 1;
+    }
+    p.grid5 = g;
+    normalizePieceGrid5(p);
+  }
+
+  // ----- render -----
+  function renderStatus(msg, isErr){
+    if (!msg){
+      if (state.lastStats){
+        const s = state.lastStats;
+        msg = s.found
+          ? `Найдено • узлы ${s.nodes} • ${s.ms}мс`
+          : `Не найдено • ${s.stopReason || ""} • узлы ${s.nodes} • ${s.ms}мс`;
+        isErr = !s.found;
+      } else msg = "Готово.";
+    }
+    el("status").textContent = msg;
+    const errBox = el("errBox");
+    if (isErr){
+      errBox.style.display = "block";
+      errBox.textContent = msg;
+    } else {
+      errBox.style.display = "none";
+      errBox.textContent = "";
+    }
+  }
+
+  function renderCounts(){
+    const top = el("topCounts");
+    const left = el("leftCounts");
+    top.innerHTML = "";
+    left.innerHTML = "";
+
+    top.style.gridTemplateColumns = `repeat(${state.cols}, var(--cell))`;
+    left.style.gridTemplateRows = `repeat(${state.rows}, var(--cell))`;
+
+    const colors = state.activeColors;
+
+    if (!colors.length){
+      // total mode (старое поведение)
+      for (let c=0;c<state.cols;c++){
+        const inp = document.createElement("input");
+        inp.className = "countInput";
+        inp.placeholder = "•";
+        inp.value = state.colTargets[c] ?? "";
+        inp.addEventListener("input", () => {
+          const t = inp.value.trim();
+          if (t === "") state.colTargets[c] = "";
+          else state.colTargets[c] = String(Math.max(0, Math.min(state.rows, parseInt(t,10) || 0)));
+        });
+        top.appendChild(inp);
+      }
+      for (let r=0;r<state.rows;r++){
+        const inp = document.createElement("input");
+        inp.className = "countInput";
+        inp.placeholder = "•";
+        inp.value = state.rowTargets[r] ?? "";
+        inp.addEventListener("input", () => {
+          const t = inp.value.trim();
+          if (t === "") state.rowTargets[r] = "";
+          else state.rowTargets[r] = String(Math.max(0, Math.min(state.cols, parseInt(t,10) || 0)));
+        });
+        left.appendChild(inp);
+      }
+      return;
+    }
+
+    // color mode
+    for (let c=0;c<state.cols;c++){
+      const stack = document.createElement("div");
+      stack.className = "topColStack";
+      for (const col of colors){
+        const row = document.createElement("div");
+        row.className = "countRow";
+        const sw = document.createElement("span");
+        sw.className = "swatch";
+        sw.style.background = col;
+        const inp = document.createElement("input");
+        inp.className = "countInputMini";
+        inp.placeholder = "•";
+        inp.value = (state.colColorTargets[c] && (state.colColorTargets[c][col] ?? "")) || "";
+        inp.addEventListener("input", () => {
+          const t = inp.value.trim();
+          if (t === "") state.colColorTargets[c][col] = "";
+          else state.colColorTargets[c][col] = String(Math.max(0, Math.min(state.rows, parseInt(t,10) || 0)));
+        });
+        row.appendChild(sw);
+        row.appendChild(inp);
+        stack.appendChild(row);
+      }
+      top.appendChild(stack);
+    }
+
+    for (let r=0;r<state.rows;r++){
+      const stack = document.createElement("div");
+      stack.className = "leftRowStack";
+      for (const col of colors){
+        const row = document.createElement("div");
+        row.className = "countRow";
+        const sw = document.createElement("span");
+        sw.className = "swatch";
+        sw.style.background = col;
+        const inp = document.createElement("input");
+        inp.className = "countInputMini";
+        inp.placeholder = "•";
+        inp.value = (state.rowColorTargets[r] && (state.rowColorTargets[r][col] ?? "")) || "";
+        inp.addEventListener("input", () => {
+          const t = inp.value.trim();
+          if (t === "") state.rowColorTargets[r][col] = "";
+          else state.rowColorTargets[r][col] = String(Math.max(0, Math.min(state.cols, parseInt(t,10) || 0)));
+        });
+        row.appendChild(sw);
+        row.appendChild(inp);
+        stack.appendChild(row);
+      }
+      left.appendChild(stack);
+    }
+  }
+
+  function renderGrid(){
+    const grid = el("grid");
+    grid.innerHTML = "";
+    grid.style.gridTemplateColumns = `repeat(${state.cols}, var(--cell))`;
+    grid.style.gridAutoRows = `var(--cell)`;
+
+    const C = state.cols;
+
+    for (let r=0;r<state.rows;r++){
+      for (let c=0;c<state.cols;c++){
+        const idx = r*state.cols + c;
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const t = state.cellTypes[idx];
+        if (t === 1) cell.classList.add("hole");
+        if (t === 2) cell.classList.add("fixed");
+
+        // solution paint
+        if (state.solution && state.solution.cellToPiece[idx] >= 0){
+          const p = state.solution.cellToPiece[idx];
+          const baseId = state.solution.pieceBaseId ? state.solution.pieceBaseId[p] : p;
+          const col = pieceColor(baseId);
+          cell.style.background = `linear-gradient(180deg, ${colorToRgba(col, 0.55)}, rgba(0,0,0,0.14))`;
+          cell.style.borderColor = colorToRgba(col, 0.65);
+          const b = document.createElement("span");
+          b.className = "badge";
+          b.textContent = String(p+1);
+          cell.appendChild(b);
+        } else if (t === 2){
+          const fc = state.fixedColors[idx];
+          if (fc){
+            cell.style.background = `linear-gradient(180deg, ${colorToRgba(fc, 0.45)}, rgba(0,0,0,0.14))`;
+            cell.style.borderColor = colorToRgba(fc, 0.60);
+          }
+          const b = document.createElement("span");
+          b.className = "badge";
+          b.textContent = "■";
+          cell.appendChild(b);
+        }
+
+        cell.addEventListener("click", (ev) => {
+          state.solution = null;
+          const colors = state.activeColors;
+          const curType = state.cellTypes[idx];
+
+          if (curType === 0){
+            // empty -> hole
+            state.cellTypes[idx] = 1;
+            state.fixedColors[idx] = "";
+          } else if (curType === 1){
+            // hole -> fixed(first color) OR empty if no colors
+            if (colors.length){
+              state.cellTypes[idx] = 2;
+              state.fixedColors[idx] = colors[0];
+            } else {
+              state.cellTypes[idx] = 0;
+              state.fixedColors[idx] = "";
+            }
+          } else {
+            // fixed -> next fixed color -> ... -> empty
+            if (!colors.length){
+              state.cellTypes[idx] = 0;
+              state.fixedColors[idx] = "";
+            } else {
+              const cur = state.fixedColors[idx] || colors[0];
+              let j = colors.indexOf(cur);
+              if (j < 0) j = 0;
+              if (j + 1 < colors.length){
+                state.cellTypes[idx] = 2;
+                state.fixedColors[idx] = colors[j+1];
+              } else {
+                state.cellTypes[idx] = 0;
+                state.fixedColors[idx] = "";
+              }
+            }
+          }
+          renderGrid();
+        });
+
+        cell.addEventListener("contextmenu", (ev) => {
+          ev.preventDefault();
+          if (state.cellTypes[idx] !== 2) return;
+          const colors = state.activeColors;
+          if (!colors.length) return;
+          const cur = state.fixedColors[idx] || colors[0];
+          const j = Math.max(0, colors.indexOf(cur));
+          const nxt = colors[(j+1) % colors.length];
+          state.fixedColors[idx] = nxt;
+          renderGrid();
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function renderPieces(){
+    const list = el("pieces");
+    list.innerHTML = "";
+
+    if (state.pieces.length && state.selectedPiece < 0) state.selectedPiece = 0;
+    if (state.selectedPiece >= state.pieces.length) state.selectedPiece = state.pieces.length - 1;
+
+    state.pieces.forEach((p, i) => {
+      const card = document.createElement("div");
+      card.className = "pieceCard" + (i === state.selectedPiece ? " selected" : "");
+      card.addEventListener("click", () => { state.selectedPiece = i; renderPieces(); });
+
+      const meta = document.createElement("div");
+      meta.className = "pieceMeta";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "nameRow";
+
+      const num = document.createElement("div");
+      num.style.fontWeight = "800";
+      num.textContent = `${i+1}.`;
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = p.name || `Фигура ${i+1}`;
+      name.addEventListener("click", (ev) => ev.stopPropagation());
+      name.addEventListener("input", (ev) => { p.name = ev.target.value; });
+      nameRow.appendChild(num);
+      nameRow.appendChild(name);
+
+      const mult = document.createElement("span");
+      mult.textContent = "×";
+      mult.style.color = "rgba(255,170,0,0.75)";
+      mult.style.fontWeight = "800";
+
+      const qtyInp = document.createElement("input");
+      qtyInp.type = "number";
+      qtyInp.min = "1";
+      qtyInp.max = "99";
+      qtyInp.value = String(clampInt(p.qty, 1, 99, 1));
+      qtyInp.style.width = "64px";
+      qtyInp.style.height = "34px";
+      qtyInp.style.padding = "0 8px";
+      qtyInp.style.borderRadius = "12px";
+      qtyInp.addEventListener("click", (ev) => ev.stopPropagation());
+      qtyInp.addEventListener("input", (ev) => {
+        p.qty = clampInt(ev.target.value, 1, 99, 1);
+        state.solution = null;
+        state.lastStats = null;
+      });
+
+      nameRow.appendChild(mult);
+      nameRow.appendChild(qtyInp);
+
+      const paletteRow = document.createElement("div");
+      paletteRow.className = "paletteRow";
+      const curCol = pieceColor(i);
+      for (const hex of DEFAULT_PALETTE){
+        const h = String(hex).toUpperCase();
+        const b = document.createElement("button");
+        b.className = "palBtn" + (h === curCol ? " sel" : "");
+        b.style.background = h;
+        b.title = h;
+        b.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          p.color = h;
+          state.solution = null;
+          syncColorModel();
+          renderPieces();
+        });
+        paletteRow.appendChild(b);
+      }
+
+
+      const coords = pieceToCoords(p);
+      const n = coords.length;
+      const bb = bbox(coords);
+      const comps = connectedComponentsCount(coords);
+      const info = document.createElement("div");
+      info.className = "small";
+      let connText = "пустая";
+      if (n) connText = (comps === 1) ? "связная" : `несвязная (${comps})`;
+      info.textContent = `Клеток ${n} • ${bb.h}×${bb.w} • ${connText}`;
+
+      const acts = document.createElement("div");
+      acts.className = "miniActions";
+
+      const rotL = document.createElement("button");
+      rotL.textContent = "↺";
+      rotL.addEventListener("click", (ev)=>{ ev.stopPropagation(); rotatePieceGrid5(p, -1); state.solution=null; renderPieces(); });
+
+      const rotR = document.createElement("button");
+      rotR.textContent = "↻";
+      rotR.addEventListener("click", (ev)=>{ ev.stopPropagation(); rotatePieceGrid5(p, +1); state.solution=null; renderPieces(); });
+
+      const clear = document.createElement("button");
+      clear.textContent = "Очистить";
+      clear.addEventListener("click", (ev)=>{ ev.stopPropagation(); p.grid5 = new Uint8Array(25); state.solution=null; renderPieces(); syncColorModel(); });
+
+      acts.appendChild(rotL);
+      acts.appendChild(rotR);
+      acts.appendChild(clear);
+
+      const editor = document.createElement("div");
+      editor.className = "miniGrid";
+      editor.style.gridTemplateColumns = "repeat(5, 16px)";
+      editor.style.gridAutoRows = "16px";
+
+      for (let rr=0;rr<5;rr++){
+        for (let cc=0;cc<5;cc++){
+          const k = rr*5+cc;
+          const d = document.createElement("div");
+          d.className = "miniCell" + (p.grid5[k] ? " on" : "");
+          d.style.background = p.grid5[k] ? colorToRgba(pieceColor(i), 0.55) : "";
+          d.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            p.grid5[k] = p.grid5[k] ? 0 : 1;
+            state.solution = null;
+            renderPieces();
+            syncColorModel();
+          });
+          editor.appendChild(d);
+        }
+      }
+
+      meta.appendChild(nameRow);
+      meta.appendChild(paletteRow);
+      meta.appendChild(info);
+      meta.appendChild(acts);
+
+      card.appendChild(meta);
+      card.appendChild(editor);
+
+      list.appendChild(card);
+    });
+  }
+
+  function renderAll(){
+    el("rows").value = state.rows;
+    el("cols").value = state.cols;
+    renderCounts();
+    renderGrid();
+    renderPieces();
+    renderStatus();
+  }
+
+  // ----- diagnostics -----
+  function parseTargets(arr, maxV){
+    const out = new Array(arr.length).fill(null);
+    for (let i=0;i<arr.length;i++){
+      const t = String(arr[i] ?? "").trim();
+      if (t === "") { out[i] = null; continue; }
+      const v = clampInt(t, 0, maxV, 0);
+      out[i] = v;
+    }
+    return out;
+  }
+
+  function parseColorTargetsRowCol(objs, colors, maxV){
+    const K = colors.length;
+    const out = Array.from({length: objs.length}, ()=> new Int32Array(K).fill(-1));
+    for (let i=0;i<objs.length;i++){
+      const o = objs[i] || {};
+      for (let k=0;k<K;k++){
+        const col = colors[k];
+        const t = String(o[col] ?? "").trim();
+        if (t === "") continue;
+        out[i][k] = clampInt(t, 0, maxV, 0);
+      }
+    }
+    return out;
+  }
+
+  function computeDiagnostics(){
+    const R = state.rows, C = state.cols;
+    const N = R*C;
+    const colors = state.activeColors;
+    const problems = [];
+
+    // piece checks
+    let piecesTotal = 0;
+    const piecesByColor = new Map();
+    for (let i=0;i<state.pieces.length;i++){
+      const coords = pieceToCoords(state.pieces[i]);
+      const qty = clampInt(state.pieces[i].qty, 1, 99, 1);
+      piecesTotal += coords.length * qty;
+      const comps = connectedComponentsCount(coords);
+      if (!coords.length) problems.push(`Фигура ${i+1}: пустая.`);
+      else if (comps !== 1) problems.push(`Фигура ${i+1}: несвязная.`);
+      const col = pieceColor(i);
+      piecesByColor.set(col, (piecesByColor.get(col)||0) + coords.length * qty);
+    }
+
+    // fixed color validity if colors mode
+    if (colors.length){
+      for (let i=0;i<N;i++){
+        if (state.cellTypes[i] === 2){
+          const fc = state.fixedColors[i];
+          if (!fc) problems.push(`Фикс.блок: клетка ${i+1} без цвета.`);
+          else if (!colors.includes(fc)) problems.push(`Фикс.блок: цвет ${fc} без фигуры.`);
+        }
+      }
+    }
+
+    // row/col constraints
+    if (!colors.length){
+      const rowT = parseTargets(state.rowTargets, C);
+      const colT = parseTargets(state.colTargets, R);
+
+      const fixedRow = new Int32Array(R);
+      const fixedCol = new Int32Array(C);
+      const placeableRow = new Int32Array(R);
+      const placeableCol = new Int32Array(C);
+      for (let i=0;i<N;i++){
+        const s = state.cellTypes[i];
+        const r = (i/C)|0, c = i% C;
+        if (s === 2){ fixedRow[r]++; fixedCol[c]++; }
+        if (s === 0){ placeableRow[r]++; placeableCol[c]++; }
+      }
+      for (let r=0;r<R;r++){
+        if (rowT[r] != null){
+          if (fixedRow[r] > rowT[r]) problems.push(`Строка ${r+1}: фикс ${fixedRow[r]} > ${rowT[r]}.`);
+          if (rowT[r] - fixedRow[r] > placeableRow[r]) problems.push(`Строка ${r+1}: не хватает свободных.`);
+        }
+      }
+      for (let c=0;c<C;c++){
+        if (colT[c] != null){
+          if (fixedCol[c] > colT[c]) problems.push(`Колонка ${c+1}: фикс ${fixedCol[c]} > ${colT[c]}.`);
+          if (colT[c] - fixedCol[c] > placeableCol[c]) problems.push(`Колонка ${c+1}: не хватает свободных.`);
+        }
+      }
+      const report = `Поле ${R}×${C} • Фигур ${state.pieces.length} • Клеток в фигурах ${piecesTotal}`;
+      return { report, problems };
+    }
+
+    // color mode constraints
+    const rowT = parseColorTargetsRowCol(state.rowColorTargets, colors, C);
+    const colT = parseColorTargetsRowCol(state.colColorTargets, colors, R);
+    const K = colors.length;
+
+    const holeRow = new Int32Array(R);
+    const holeCol = new Int32Array(C);
+    const fixedRowTot = new Int32Array(R);
+    const fixedColTot = new Int32Array(C);
+    const fixedRowColor = Array.from({length:R}, ()=> new Int32Array(K));
+    const fixedColColor = Array.from({length:C}, ()=> new Int32Array(K));
+
+    const colorIndex = new Map(colors.map((c,i)=>[c,i]));
+
+    for (let i=0;i<N;i++){
+      const s = state.cellTypes[i];
+      const r=(i/C)|0, c=i%C;
+      if (s===1){ holeRow[r]++; holeCol[c]++; }
+      if (s===2){
+        fixedRowTot[r]++; fixedColTot[c]++;
+        const fc = state.fixedColors[i];
+        const k = colorIndex.get(fc);
+        if (k != null){ fixedRowColor[r][k]++; fixedColColor[c][k]++; }
+      }
+    }
+
+    // per-row feasibility
+    for (let r=0;r<R;r++){
+      const nonHole = C - holeRow[r];
+      let sumSpecified = 0;
+      for (let k=0;k<K;k++){
+        const t = rowT[r][k];
+        if (t >= 0){
+          sumSpecified += t;
+          if (t > nonHole) problems.push(`Строка ${r+1}: ${colors[k]} = ${t} > ${nonHole}.`);
+          if (fixedRowColor[r][k] > t) problems.push(`Строка ${r+1}: фикс ${colors[k]} (${fixedRowColor[r][k]}) > ${t}.`);
+        }
+      }
+      if (sumSpecified > nonHole) problems.push(`Строка ${r+1}: сумма > доступных (${sumSpecified} > ${nonHole}).`);
+    }
+    for (let c=0;c<C;c++){
+      const nonHole = R - holeCol[c];
+      let sumSpecified = 0;
+      for (let k=0;k<K;k++){
+        const t = colT[c][k];
+        if (t >= 0){
+          sumSpecified += t;
+          if (t > nonHole) problems.push(`Колонка ${c+1}: ${colors[k]} = ${t} > ${nonHole}.`);
+          if (fixedColColor[c][k] > t) problems.push(`Колонка ${c+1}: фикс ${colors[k]} (${fixedColColor[c][k]}) > ${t}.`);
+        }
+      }
+      if (sumSpecified > nonHole) problems.push(`Колонка ${c+1}: сумма > доступных (${sumSpecified} > ${nonHole}).`);
+    }
+
+    // global per-color consistency if fully specified
+    const allowUnused = el("allowUnused").checked;
+    for (let k=0;k<K;k++){
+      const color = colors[k];
+      const allRows = rowT.every(arr => arr[k] >= 0);
+      const allCols = colT.every(arr => arr[k] >= 0);
+      let req = null;
+      if (allRows) req = rowT.reduce((a,arr)=>a+arr[k],0);
+      else if (allCols) req = colT.reduce((a,arr)=>a+arr[k],0);
+
+      const fixedCount = fixedRowColor.reduce((a,arr)=>a+arr[k],0);
+      const piecesCount = piecesByColor.get(color) || 0;
+
+      if (req != null){
+        if (allRows && allCols){
+          const req2 = colT.reduce((a,arr)=>a+arr[k],0);
+          if (req2 !== req) problems.push(`Цвет ${color}: сумма по строкам ${req} != сумма по колонкам ${req2}.`);
+        }
+        const have = fixedCount + piecesCount;
+        if (!allowUnused && have !== req) problems.push(`Цвет ${color}: нужно ${req}, а есть ${have} (фигуры ${piecesCount} + фикс ${fixedCount}).`);
+        if (allowUnused && have < req) problems.push(`Цвет ${color}: нужно ${req}, а максимум ${have}.`);
+      }
+    }
+
+    const report = `Поле ${R}×${C} • Цветов ${colors.length} • Фигур ${state.pieces.length}`;
+    return { report, problems };
+  }
+
+  function runDiagnose(){
+    const d = computeDiagnostics();
+    let msg = d.report;
+    if (d.problems.length){
+      msg += "\n\nПроблемы:\n- " + d.problems.join("\n- ");
+      state.lastStats = null;
+      renderStatus(msg, true);
+      return false;
+    }
+    state.lastStats = null;
+    renderStatus(msg + "\n\nОк.", false);
+    return true;
+  }
+
+  // ----- solver -----
+  function solvePuzzle(limitNodes){
+    const colors = state.activeColors;
+    if (!colors.length) return solvePuzzleMono(limitNodes);
+    return solvePuzzleColor(limitNodes, colors);
+  }
+
+  function solvePuzzleMono(limitNodes){
+    const t0 = performance.now();
+    const R = state.rows, C = state.cols;
+    const N = R*C;
+
+    const rowT = parseTargets(state.rowTargets, C);
+    const colT = parseTargets(state.colTargets, R);
+
+    const hole = new Uint8Array(N);
+    const fixed = new Uint8Array(N);
+    const fixedRow = new Int32Array(R);
+    const fixedCol = new Int32Array(C);
+    const placeableRow = new Int32Array(R);
+    const placeableCol = new Int32Array(C);
+
+    for (let i=0;i<N;i++){
+      const s = state.cellTypes[i];
+      if (s === 1) hole[i]=1;
+      if (s === 2){
+        fixed[i]=1;
+        const r = (i / C) | 0, c = i % C;
+        fixedRow[r]++; fixedCol[c]++;
+      }
+      if (!hole[i] && !fixed[i]){
+        const r = (i / C) | 0, c = i % C;
+        placeableRow[r]++; placeableCol[c]++;
+      }
+    }
+
+    function stats(found, reason, nodes, sol, baseMap){
+      const ms = Math.round(performance.now() - t0);
+      return { found, stopReason: reason, ms, nodes, cellToPiece: sol || null, pieceBaseId: baseMap || null };
+    }
+
+    for (let r=0;r<R;r++){
+      if (rowT[r] != null && fixedRow[r] > rowT[r]) return stats(false, "Фиксированные блоки > ограничение строки", 0);
+      if (rowT[r] != null){
+        const need = rowT[r] - fixedRow[r];
+        if (need > placeableRow[r]) return stats(false, "Недостаточно свободных клеток в строке", 0);
+      }
+    }
+    for (let c=0;c<C;c++){
+      if (colT[c] != null && fixedCol[c] > colT[c]) return stats(false, "Фиксированные блоки > ограничение колонки", 0);
+      if (colT[c] != null){
+        const need = colT[c] - fixedCol[c];
+        if (need > placeableCol[c]) return stats(false, "Недостаточно свободных клеток в колонке", 0);
+      }
+    }
+
+    // expand pieces by qty
+    const basePieces = [];
+    let piecesTotal = 0;
+    for (let i=0;i<state.pieces.length;i++){
+      const base = pieceToCoords(state.pieces[i]);
+      if (!base.length) return stats(false, `Фигура ${i+1} пустая`, 0);
+      const comps = connectedComponentsCount(base);
+      if (comps !== 1) return stats(false, `Фигура ${i+1} несвязная`, 0);
+      const qty = clampInt(state.pieces[i].qty, 1, 99, 1);
+      piecesTotal += base.length * qty;
+      basePieces.push({ baseId:i, base, qty });
+    }
+
+    const placementsCache = basePieces.map(bp => {
+      const rots = uniqueRotations(bp.base);
+      const all = [];
+      for (const shape of rots){
+        let maxR=0, maxC=0;
+        for (const [r,c] of shape){ if (r>maxR) maxR=r; if (c>maxC) maxC=c; }
+        for (let br=0; br<=R-1-maxR; br++){
+          for (let bc=0; bc<=C-1-maxC; bc++){
+            const cells = [];
+            let ok = true;
+            for (const [dr,dc] of shape){
+              const rr=br+dr, cc=bc+dc;
+              const idx = rr*C+cc;
+              if (hole[idx] || fixed[idx]) { ok = false; break; }
+              cells.push(idx);
+            }
+            if (ok) all.push(cells);
+          }
+        }
+      }
+      return all;
+    });
+
+    const pieces = [];
+    for (let bi=0; bi<basePieces.length; bi++){
+      const bp = basePieces[bi];
+      const placements = placementsCache[bi];
+      for (let q=0;q<bp.qty;q++){
+        pieces.push({ baseId: bp.baseId, placements });
+      }
+    }
+
+    const pieceBaseId = new Int32Array(pieces.length);
+    for (let i=0;i<pieces.length;i++) pieceBaseId[i] = pieces[i].baseId;
+
+    const placementsByPiece = pieces.map(pc => pc.placements);
+
+
+    const order = pieces.map((_,i)=>i).sort((a,b)=>placementsByPiece[a].length - placementsByPiece[b].length);
+
+    const cellToPiece = new Int32Array(N); cellToPiece.fill(-1);
+    const occupied = new Uint8Array(N);
+    const rowRemain = rowT.map((t,r)=> t==null ? null : (t - fixedRow[r]));
+    const colRemain = colT.map((t,c)=> t==null ? null : (t - fixedCol[c]));
+    const rowOcc = new Int32Array(R);
+    const colOcc = new Int32Array(C);
+
+    function allConstraintsSatisfied(){
+      for (let r=0;r<R;r++) if (rowRemain[r] != null && rowRemain[r] !== 0) return false;
+      for (let c=0;c<C;c++) if (colRemain[c] != null && colRemain[c] !== 0) return false;
+      return true;
+    }
+    function globalCapacityOk(){
+      for (let r=0;r<R;r++){
+        if (rowRemain[r]==null) continue;
+        const cap = placeableRow[r] - rowOcc[r];
+        if (rowRemain[r] < 0 || rowRemain[r] > cap) return false;
+      }
+      for (let c=0;c<C;c++){
+        if (colRemain[c]==null) continue;
+        const cap = placeableCol[c] - colOcc[c];
+        if (colRemain[c] < 0 || colRemain[c] > cap) return false;
+      }
+      return true;
+    }
+    function canPlace(cells){
+      const incR = new Map();
+      const incC = new Map();
+      for (const idx of cells){
+        if (occupied[idx] || hole[idx] || fixed[idx]) return null;
+        const r = (idx / C) | 0, c = idx % C;
+        incR.set(r, (incR.get(r)||0) + 1);
+        incC.set(c, (incC.get(c)||0) + 1);
+      }
+      for (const [r,add] of incR.entries()){
+        if (rowRemain[r] != null && add > rowRemain[r]) return null;
+        if (rowRemain[r] != null){
+          const after = rowRemain[r] - add;
+          const capAfter = placeableRow[r] - rowOcc[r] - add;
+          if (after < 0 || after > capAfter) return null;
+        }
+      }
+      for (const [c,add] of incC.entries()){
+        if (colRemain[c] != null && add > colRemain[c]) return null;
+        if (colRemain[c] != null){
+          const after = colRemain[c] - add;
+          const capAfter = placeableCol[c] - colOcc[c] - add;
+          if (after < 0 || after > capAfter) return null;
+        }
+      }
+      return { incR, incC };
+    }
+    function apply(pieceIdx, cells, delta){
+      for (const idx of cells){
+        occupied[idx]=1;
+        cellToPiece[idx]=pieceIdx;
+        const r=(idx/C)|0, c=idx%C;
+        rowOcc[r]++; colOcc[c]++;
+      }
+      for (const [r,add] of delta.incR.entries()) if (rowRemain[r]!=null) rowRemain[r]-=add;
+      for (const [c,add] of delta.incC.entries()) if (colRemain[c]!=null) colRemain[c]-=add;
+    }
+    function undo(pieceIdx, cells, delta){
+      for (const idx of cells){
+        occupied[idx]=0;
+        cellToPiece[idx]=-1;
+        const r=(idx/C)|0, c=idx%C;
+        rowOcc[r]--; colOcc[c]--;
+      }
+      for (const [r,add] of delta.incR.entries()) if (rowRemain[r]!=null) rowRemain[r]+=add;
+      for (const [c,add] of delta.incC.entries()) if (colRemain[c]!=null) colRemain[c]+=add;
+    }
+
+    let nodes=0;
+    let best=null;
+    const allowUnused = el("allowUnused").checked;
+
+    function dfs(pos){
+      if (nodes++ >= limitNodes) return false;
+
+      if (allowUnused && allConstraintsSatisfied()){
+        best = new Int32Array(cellToPiece);
+        return true;
+      }
+      if (pos === pieces.length){
+        if (allConstraintsSatisfied()){
+          best = new Int32Array(cellToPiece);
+          return true;
+        }
+        return false;
+      }
+
+      const pieceIdx = order[pos];
+      const placements = placementsByPiece[pieceIdx];
+
+      if (allowUnused){
+        if (dfs(pos+1)) return true;
+      }
+
+      for (const cells of placements){
+        const delta = canPlace(cells);
+        if (!delta) continue;
+        apply(pieceIdx, cells, delta);
+        if (globalCapacityOk()){
+          if (dfs(pos+1)) return true;
+        }
+        undo(pieceIdx, cells, delta);
+      }
+      return false;
+    }
+
+    const found = dfs(0);
+    if (found){
+      return stats(true, "ok", nodes, best, pieceBaseId);
+    }
+    return stats(false, nodes >= limitNodes ? "лимит" : "нет", nodes, null);
+  }
+
+  function solvePuzzleColor(limitNodes, colors){
+    const t0 = performance.now();
+    const R = state.rows, C = state.cols;
+    const N = R*C;
+    const K = colors.length;
+    const colorIndex = new Map(colors.map((c,i)=>[c,i]));
+
+    // parse targets
+    const rowT = parseColorTargetsRowCol(state.rowColorTargets, colors, C);
+    const colT = parseColorTargetsRowCol(state.colColorTargets, colors, R);
+
+    const hole = new Uint8Array(N);
+    const fixed = new Uint8Array(N);
+
+    const holeRow = new Int32Array(R);
+    const holeCol = new Int32Array(C);
+    const fixedRowTot = new Int32Array(R);
+    const fixedColTot = new Int32Array(C);
+    const fixedRowColor = Array.from({length:R}, ()=> new Int32Array(K));
+    const fixedColColor = Array.from({length:C}, ()=> new Int32Array(K));
+    const placeableRow = new Int32Array(R);
+    const placeableCol = new Int32Array(C);
+
+    for (let i=0;i<N;i++){
+      const s = state.cellTypes[i];
+      const r=(i/C)|0, c=i%C;
+      if (s===1){
+        hole[i]=1;
+        holeRow[r]++; holeCol[c]++;
+      } else if (s===2){
+        fixed[i]=1;
+        fixedRowTot[r]++; fixedColTot[c]++;
+        const fc = state.fixedColors[i];
+        const k = colorIndex.get(fc);
+        if (k == null){
+          return { found:false, stopReason:"фиксированный блок без цвета", ms:0, nodes:0, cellToPiece:null };
+        }
+        fixedRowColor[r][k]++; fixedColColor[c][k]++;
+      } else {
+        placeableRow[r]++; placeableCol[c]++;
+      }
+    }
+
+    // validate row/col sums
+    for (let r=0;r<R;r++){
+      const nonHole = C - holeRow[r];
+      let sum=0;
+      for (let k=0;k<K;k++){
+        if (rowT[r][k] >= 0){
+          sum += rowT[r][k];
+          if (fixedRowColor[r][k] > rowT[r][k]){
+            return { found:false, stopReason:"фикс > ограничение строки", ms:0, nodes:0, cellToPiece:null };
+          }
+          const need = rowT[r][k] - fixedRowColor[r][k];
+          if (need > placeableRow[r]){
+            return { found:false, stopReason:"недостаточно свободных в строке", ms:0, nodes:0, cellToPiece:null };
+          }
+        }
+      }
+      if (sum > nonHole){
+        return { found:false, stopReason:"сумма ограничений строки > доступных", ms:0, nodes:0, cellToPiece:null };
+      }
+    }
+    for (let c=0;c<C;c++){
+      const nonHole = R - holeCol[c];
+      let sum=0;
+      for (let k=0;k<K;k++){
+        if (colT[c][k] >= 0){
+          sum += colT[c][k];
+          if (fixedColColor[c][k] > colT[c][k]){
+            return { found:false, stopReason:"фикс > ограничение колонки", ms:0, nodes:0, cellToPiece:null };
+          }
+          const need = colT[c][k] - fixedColColor[c][k];
+          if (need > placeableCol[c]){
+            return { found:false, stopReason:"недостаточно свободных в колонке", ms:0, nodes:0, cellToPiece:null };
+          }
+        }
+      }
+      if (sum > nonHole){
+        return { found:false, stopReason:"сумма ограничений колонки > доступных", ms:0, nodes:0, cellToPiece:null };
+      }
+    }
+
+    // pieces with color index (expanded by qty)
+    const basePieces = [];
+    const piecesCellsByColor = new Int32Array(K);
+    for (let i=0;i<state.pieces.length;i++){
+      const base = pieceToCoords(state.pieces[i]);
+      if (!base.length) return { found:false, stopReason:`Фигура ${i+1} пустая`, ms:0, nodes:0, cellToPiece:null, pieceBaseId:null };
+      if (connectedComponentsCount(base) !== 1) return { found:false, stopReason:`Фигура ${i+1} несвязная`, ms:0, nodes:0, cellToPiece:null, pieceBaseId:null };
+      const col = pieceColor(i);
+      const k = colorIndex.get(col);
+      if (k == null) return { found:false, stopReason:`Фигура ${i+1}: цвет не активен`, ms:0, nodes:0, cellToPiece:null, pieceBaseId:null };
+      const qty = clampInt(state.pieces[i].qty, 1, 99, 1);
+      piecesCellsByColor[k] += base.length * qty;
+      basePieces.push({ baseId:i, base, k, qty });
+    }
+
+    const placementsCache = basePieces.map(bp => {
+      const rots = uniqueRotations(bp.base);
+      const all = [];
+      for (const shape of rots){
+        let maxR=0, maxC=0;
+        for (const [r,c] of shape){ if (r>maxR) maxR=r; if (c>maxC) maxC=c; }
+        for (let br=0; br<=R-1-maxR; br++){
+          for (let bc=0; bc<=C-1-maxC; bc++){
+            const cells = [];
+            let ok = true;
+            for (const [dr,dc] of shape){
+              const rr=br+dr, cc=bc+dc;
+              const idx = rr*C+cc;
+              if (hole[idx] || fixed[idx]) { ok = false; break; }
+              cells.push(idx);
+            }
+            if (ok) all.push(cells);
+          }
+        }
+      }
+      return all;
+    });
+
+    const pieces = [];
+    for (let bi=0; bi<basePieces.length; bi++){
+      const bp = basePieces[bi];
+      const placements = placementsCache[bi];
+      for (let q=0;q<bp.qty;q++){
+        pieces.push({ baseId: bp.baseId, k: bp.k, placements });
+      }
+    }
+
+    const pieceBaseId = new Int32Array(pieces.length);
+    for (let i=0;i<pieces.length;i++) pieceBaseId[i] = pieces[i].baseId;
+
+    // remains init
+    const rowRemain = Array.from({length:R}, ()=> new Int32Array(K).fill(-1));
+    const colRemain = Array.from({length:C}, ()=> new Int32Array(K).fill(-1));
+    for (let r=0;r<R;r++){
+      for (let k=0;k<K;k++){
+        if (rowT[r][k] >= 0) rowRemain[r][k] = rowT[r][k] - fixedRowColor[r][k];
+      }
+    }
+    for (let c=0;c<C;c++){
+      for (let k=0;k<K;k++){
+        if (colT[c][k] >= 0) colRemain[c][k] = colT[c][k] - fixedColColor[c][k];
+      }
+    }
+
+    // placements per piece
+    const placementsByPiece = pieces.map(pc => pc.placements);
+
+    const order = pieces.map((_,i)=>i).sort((a,b)=>placementsByPiece[a].length - placementsByPiece[b].length);
+
+    const cellToPiece = new Int32Array(N); cellToPiece.fill(-1);
+    const occupied = new Uint8Array(N);
+    const rowOcc = new Int32Array(R);
+    const colOcc = new Int32Array(C);
+    const placedColorCells = new Int32Array(K);
+
+    function allConstraintsSatisfied(){
+      for (let r=0;r<R;r++){
+        for (let k=0;k<K;k++){
+          if (rowRemain[r][k] !== -1 && rowRemain[r][k] !== 0) return false;
+        }
+      }
+      for (let c=0;c<C;c++){
+        for (let k=0;k<K;k++){
+          if (colRemain[c][k] !== -1 && colRemain[c][k] !== 0) return false;
+        }
+      }
+      return true;
+    }
+
+    function globalCapacityOk(){
+      // per-row/col capacity by free cells
+      for (let r=0;r<R;r++){
+        const free = placeableRow[r] - rowOcc[r];
+        for (let k=0;k<K;k++){
+          const rem = rowRemain[r][k];
+          if (rem === -1) continue;
+          if (rem < 0 || rem > free) return false;
+        }
+      }
+      for (let c=0;c<C;c++){
+        const free = placeableCol[c] - colOcc[c];
+        for (let k=0;k<K;k++){
+          const rem = colRemain[c][k];
+          if (rem === -1) continue;
+          if (rem < 0 || rem > free) return false;
+        }
+      }
+      // per-color upper bound by remaining cells in pieces
+      for (let k=0;k<K;k++){
+        const available = piecesCellsByColor[k] - placedColorCells[k];
+        let needR = 0, needC = 0;
+        for (let r=0;r<R;r++){ const rem = rowRemain[r][k]; if (rem !== -1) needR += rem; }
+        for (let c=0;c<C;c++){ const rem = colRemain[c][k]; if (rem !== -1) needC += rem; }
+        if (needR > available || needC > available) return false;
+      }
+      return true;
+    }
+
+    function canPlace(pieceIdx, cells){
+      const k = pieces[pieceIdx].k;
+      const incR = new Map();
+      const incC = new Map();
+      for (const idx of cells){
+        if (occupied[idx] || hole[idx] || fixed[idx]) return null;
+        const r = (idx / C) | 0, c = idx % C;
+        incR.set(r, (incR.get(r)||0) + 1);
+        incC.set(c, (incC.get(c)||0) + 1);
+      }
+      for (const [r,add] of incR.entries()){
+        const rem = rowRemain[r][k];
+        if (rem !== -1 && add > rem) return null;
+      }
+      for (const [c,add] of incC.entries()){
+        const rem = colRemain[c][k];
+        if (rem !== -1 && add > rem) return null;
+      }
+      return { incR, incC, k };
+    }
+
+    function apply(pieceIdx, cells, delta){
+      for (const idx of cells){
+        occupied[idx]=1;
+        cellToPiece[idx]=pieceIdx;
+        const r=(idx/C)|0, c=idx%C;
+        rowOcc[r]++; colOcc[c]++;
+      }
+      for (const [r,add] of delta.incR.entries()){
+        if (rowRemain[r][delta.k] !== -1) rowRemain[r][delta.k] -= add;
+      }
+      for (const [c,add] of delta.incC.entries()){
+        if (colRemain[c][delta.k] !== -1) colRemain[c][delta.k] -= add;
+      }
+      placedColorCells[delta.k] += cells.length;
+    }
+
+    function undo(pieceIdx, cells, delta){
+      for (const idx of cells){
+        occupied[idx]=0;
+        cellToPiece[idx]=-1;
+        const r=(idx/C)|0, c=idx%C;
+        rowOcc[r]--; colOcc[c]--;
+      }
+      for (const [r,add] of delta.incR.entries()){
+        if (rowRemain[r][delta.k] !== -1) rowRemain[r][delta.k] += add;
+      }
+      for (const [c,add] of delta.incC.entries()){
+        if (colRemain[c][delta.k] !== -1) colRemain[c][delta.k] += add;
+      }
+      placedColorCells[delta.k] -= cells.length;
+    }
+
+    let nodes = 0;
+    let best = null;
+    const allowUnused = el("allowUnused").checked;
+
+    function dfs(pos){
+      if (nodes++ >= limitNodes) return false;
+
+      if (allowUnused && allConstraintsSatisfied()){
+        best = new Int32Array(cellToPiece);
+        return true;
+      }
+      if (pos === pieces.length){
+        if (allConstraintsSatisfied()){
+          best = new Int32Array(cellToPiece);
+          return true;
+        }
+        return false;
+      }
+
+      const pieceIdx = order[pos];
+      const placements = placementsByPiece[pieceIdx];
+
+      if (allowUnused){
+        if (dfs(pos+1)) return true;
+      }
+
+      for (const cells of placements){
+        const delta = canPlace(pieceIdx, cells);
+        if (!delta) continue;
+        apply(pieceIdx, cells, delta);
+        if (globalCapacityOk()){
+          if (dfs(pos+1)) return true;
+        }
+        undo(pieceIdx, cells, delta);
+      }
+      return false;
+    }
+
+    const found = dfs(0);
+    const ms = Math.round(performance.now() - t0);
+    if (found){
+      return { found:true, stopReason:"ok", ms, nodes, cellToPiece: best, pieceBaseId };
+    }
+    return { found:false, stopReason: nodes>=limitNodes ? "лимит" : "нет", ms, nodes, cellToPiece:null, pieceBaseId:null };
+  }
+
+  // ----- import/export -----
+  function exportJSON(){
+    const data = {
+      rows: state.rows,
+      cols: state.cols,
+      cellTypes: Array.from(state.cellTypes),
+      fixedColors: state.fixedColors,
+      rowTargets: state.rowTargets,
+      colTargets: state.colTargets,
+      rowColorTargets: state.rowColorTargets,
+      colColorTargets: state.colColorTargets,
+      pieces: state.pieces.map(p => ({ name: p.name, grid5: Array.from(p.grid5), color: p.color || null, qty: clampInt(p.qty, 1, 99, 1) })),
+    };
+    el("json").value = JSON.stringify(data, null, 2);
+  }
+
+  function importJSON(){
+    try{
+      const data = JSON.parse(el("json").value);
+
+      const r = clampInt(data.rows, 1, 60, 5);
+      const c = clampInt(data.cols, 1, 60, 5);
+      state.rows = r; state.cols = c;
+      setCellSize(r,c);
+
+      const N = r*c;
+      state.cellTypes = new Uint8Array(N);
+      const ct = Array.isArray(data.cellTypes) ? data.cellTypes : (Array.isArray(data.cells) ? data.cells : []);
+      for (let i=0;i<Math.min(N,ct.length);i++){
+        const v = ct[i] | 0;
+        state.cellTypes[i] = (v===1||v===2) ? v : 0;
+      }
+
+      state.fixedColors = Array(N).fill("");
+      if (Array.isArray(data.fixedColors)){
+        for (let i=0;i<Math.min(N, data.fixedColors.length);i++){
+          state.fixedColors[i] = String(data.fixedColors[i] ?? "");
+        }
+      }
+
+      state.rowTargets = Array.isArray(data.rowTargets) ? data.rowTargets.slice(0,r).map(x=>String(x??"")) : Array(r).fill("");
+      while (state.rowTargets.length < r) state.rowTargets.push("");
+
+      state.colTargets = Array.isArray(data.colTargets) ? data.colTargets.slice(0,c).map(x=>String(x??"")) : Array(c).fill("");
+      while (state.colTargets.length < c) state.colTargets.push("");
+
+      state.rowColorTargets = Array.isArray(data.rowColorTargets) ? data.rowColorTargets.slice(0,r).map(o=> (o && typeof o==="object") ? {...o} : {}) : Array.from({length:r}, ()=> ({}));
+      while (state.rowColorTargets.length < r) state.rowColorTargets.push({});
+
+      state.colColorTargets = Array.isArray(data.colColorTargets) ? data.colColorTargets.slice(0,c).map(o=> (o && typeof o==="object") ? {...o} : {}) : Array.from({length:c}, ()=> ({}));
+      while (state.colColorTargets.length < c) state.colColorTargets.push({});
+
+      state.pieces = [];
+      if (Array.isArray(data.pieces)){
+        for (const p of data.pieces){
+          const g = new Uint8Array(25);
+          if (Array.isArray(p.grid5)){
+            for (let i=0;i<25;i++) g[i] = p.grid5[i] ? 1 : 0;
+          }
+          state.pieces.push({ name: String(p.name ?? "Фигура"), grid5: g, color: (p && p.color) ? String(p.color) : defaultPieceColor(state.pieces.length), qty: clampInt(p && p.qty, 1, 99, 1) });
+        }
+      }
+      state.selectedPiece = state.pieces.length ? 0 : -1;
+      state.solution = null;
+      state.lastStats = null;
+
+      syncColorModel();
+      renderAll();
+      renderStatus("Импортировано.");
+    } catch(e){
+      renderStatus("Ошибка импорта: " + (e.message||String(e)), true);
+    }
+  }
+
+  // ----- wiring -----
+  el("apply").addEventListener("click", () => {
+    const r = clampInt(el("rows").value, 1, 60, 5);
+    const c = clampInt(el("cols").value, 1, 60, 5);
+    state.rows = r; state.cols = c;
+    setCellSize(r, c);
+    state.cellTypes = new Uint8Array(r*c);
+    state.fixedColors = Array(r*c).fill("");
+    state.rowTargets = Array(r).fill("");
+    state.colTargets = Array(c).fill("");
+    state.rowColorTargets = Array.from({length:r}, ()=> ({}));
+    state.colColorTargets = Array.from({length:c}, ()=> ({}));
+    state.solution = null;
+    state.lastStats = null;
+    syncColorModel();
+    renderAll();
+    renderStatus("Размер применён.");
+  });
+
+  el("rerender").addEventListener("click", () => {
+    try{ syncColorModel(); renderAll(); renderStatus("Перерисовано."); }
+    catch(e){ renderStatus("Ошибка: " + (e.message||String(e)), true); }
+  });
+
+  el("clearSol").addEventListener("click", () => {
+    state.solution = null;
+    renderGrid();
+    renderStatus("Решение очищено.");
+  });
+
+  el("addPiece").addEventListener("click", () => {
+    const baseColor = (state.selectedPiece >= 0) ? pieceColor(state.selectedPiece) : defaultPieceColor(state.pieces.length);
+    state.pieces.push({ name: `Фигура ${state.pieces.length+1}`, grid5: new Uint8Array(25), color: (normalizeHex(baseColor) || defaultPieceColor(state.pieces.length)) });
+    state.selectedPiece = state.pieces.length - 1;
+    state.solution = null;
+    state.lastStats = null;
+    syncColorModel();
+    renderPieces();
+    renderStatus("Добавлена.");
+  });
+
+  el("delPiece").addEventListener("click", () => {
+    if (state.selectedPiece < 0 || state.selectedPiece >= state.pieces.length) return;
+    state.pieces.splice(state.selectedPiece, 1);
+    state.selectedPiece = Math.min(state.selectedPiece, state.pieces.length - 1);
+    if (!state.pieces.length) state.selectedPiece = -1;
+    state.solution = null;
+    state.lastStats = null;
+    syncColorModel();
+    renderAll();
+    renderStatus("Удалена.");
+  });
+
+  el("normPiece").addEventListener("click", () => {
+    if (state.selectedPiece < 0) return;
+    normalizePieceGrid5(state.pieces[state.selectedPiece]);
+    state.solution = null;
+    state.lastStats = null;
+    syncColorModel();
+    renderPieces();
+    renderStatus("Нормализована.");
+  });
+
+  el("diagnose").addEventListener("click", runDiagnose);
+
+  el("solve").addEventListener("click", () => {
+    try{
+      const ok = runDiagnose();
+      if (!ok) return;
+      const limit = clampInt(el("nodeLimit").value, 1000, 5000000, 500000);
+      const res = solvePuzzle(limit);
+      state.lastStats = res;
+      if (res.found && res.cellToPiece){
+        state.solution = { cellToPiece: res.cellToPiece, pieceBaseId: res.pieceBaseId || null };
+        renderGrid();
+      } else {
+        state.solution = null;
+        renderGrid();
+      }
+      renderStatus();
+    } catch(e){
+      renderStatus("Ошибка решателя: " + (e.message||String(e)), true);
+    }
+  });
+
+  el("resetAll").addEventListener("click", () => {
+    state.rows = 5; state.cols = 5;
+    setCellSize(5,5);
+    state.cellTypes = new Uint8Array(25);
+    state.fixedColors = Array(25).fill("");
+    state.rowTargets = Array(5).fill("");
+    state.colTargets = Array(5).fill("");
+    state.rowColorTargets = Array.from({length:5}, ()=> ({}));
+    state.colColorTargets = Array.from({length:5}, ()=> ({}));
+    state.pieces = [];
+    state.selectedPiece = -1;
+    state.solution = null;
+    state.lastStats = null;
+    syncColorModel();
+    renderAll();
+    renderStatus("Сброшено.");
+  });
+
+  el("export").addEventListener("click", exportJSON);
+  el("import").addEventListener("click", importJSON);
+
+  // init
+  setCellSize(5,5);
+  syncColorModel();
+  renderAll();
+})();
+
+</script>
+</body>
+
+</html>
